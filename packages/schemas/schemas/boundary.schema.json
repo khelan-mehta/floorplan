@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "boundary.schema.json",
+  "title": "Boundary",
+  "description": "The buildable outer geometry of the floor(s) plus site context.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "id", "north_angle_deg", "levels"],
+  "properties": {
+    "schema_version": { "type": "integer", "const": 1 },
+    "id": { "$ref": "common.schema.json#/$defs/Uuid" },
+    "north_angle_deg": { "type": "number", "minimum": 0, "exclusiveMaximum": 360 },
+    "levels": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "boundary.schema.json#/$defs/Level" }
+    },
+    "site": { "$ref": "boundary.schema.json#/$defs/Site" }
+  },
+  "$defs": {
+    "Level": {
+      "title": "Level",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["index", "elevation_mm", "floor_to_floor_mm", "outline"],
+      "properties": {
+        "index": { "type": "integer", "minimum": 0 },
+        "elevation_mm": { "type": "integer" },
+        "floor_to_floor_mm": { "type": "integer", "exclusiveMinimum": 0 },
+        "outline": { "$ref": "common.schema.json#/$defs/Polygon" },
+        "cores": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/Polygon" } },
+        "voids": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/Polygon" } }
+      }
+    },
+    "Site": {
+      "title": "Site",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["parcel_polygon", "setbacks"],
+      "properties": {
+        "parcel_polygon": { "$ref": "common.schema.json#/$defs/Polygon" },
+        "setbacks": {
+          "title": "Setbacks",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["front_mm", "rear_mm", "left_mm", "right_mm"],
+          "properties": {
+            "front_mm": { "type": "integer", "minimum": 0 },
+            "rear_mm": { "type": "integer", "minimum": 0 },
+            "left_mm": { "type": "integer", "minimum": 0 },
+            "right_mm": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    }
+  }
+}

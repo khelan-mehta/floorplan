@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ruleset.schema.json",
+  "title": "RuleSet",
+  "description": "Machine-checkable building-code rules extracted by the codes service (Phase 07).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "id", "jurisdiction", "version", "rules"],
+  "properties": {
+    "schema_version": { "type": "integer", "const": 1 },
+    "id": { "type": "string", "minLength": 1 },
+    "jurisdiction": { "type": "string", "minLength": 1 },
+    "version": { "type": "string", "minLength": 1 },
+    "source_docs": {
+      "type": "array",
+      "items": {
+        "title": "SourceDoc",
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["title"],
+        "properties": {
+          "title": { "type": "string" },
+          "url": { "type": "string" },
+          "effective_date": { "type": "string" }
+        }
+      }
+    },
+    "rules": { "type": "array", "items": { "$ref": "ruleset.schema.json#/$defs/Rule" } }
+  },
+  "$defs": {
+    "Rule": {
+      "title": "Rule",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "category", "predicate", "severity", "citation"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "category": { "type": "string", "minLength": 1 },
+        "applies_to": {
+          "title": "RuleScope",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "room_types": {
+              "type": "array",
+              "items": { "$ref": "common.schema.json#/$defs/RoomType" }
+            },
+            "element": {
+              "type": "string",
+              "enum": ["room", "door", "window", "corridor", "stair", "building", "site"]
+            }
+          }
+        },
+        "predicate": { "$ref": "ruleset.schema.json#/$defs/Predicate" },
+        "severity": { "type": "string", "enum": ["error", "warning", "info"] },
+        "citation": {
+          "title": "Citation",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["doc", "section", "text"],
+          "properties": {
+            "doc": { "type": "string" },
+            "section": { "type": "string" },
+            "text": { "type": "string" }
+          }
+        }
+      }
+    },
+    "Predicate": {
+      "title": "Predicate",
+      "description": "A small, safe predicate AST evaluated by the validator (Phase 09). See packages/schemas/README.md for the metric registry.",
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["op"],
+      "properties": {
+        "op": {
+          "type": "string",
+          "enum": ["cmp", "all", "any", "implies", "and", "or", "not"]
+        }
+      }
+    }
+  }
+}

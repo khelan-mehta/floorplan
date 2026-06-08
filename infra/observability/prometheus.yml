@@ -1,0 +1,18 @@
+# Prometheus scrape config. Every FPG service exposes /metrics (prometheus-client).
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: fpg-api
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['api:8000']
+  - job_name: fpg-services
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - 'generator:8000'
+          - 'codes:8000'
+          - 'validator:8000'
+          - 'geometry:8000'
+          - 'export:8000'

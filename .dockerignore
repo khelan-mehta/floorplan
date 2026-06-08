@@ -1,0 +1,19 @@
+# Keep host build artifacts out of image build contexts. Critically, never copy host node_modules
+# (Windows symlinks/junctions break Linux module resolution) or per-service Python .venvs.
+**/node_modules
+**/.venv
+**/dist
+**/build
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+**/.turbo
+.git
+.github
+*.db
+_demo_exports
+datasets
+models
+**/.DS_Store

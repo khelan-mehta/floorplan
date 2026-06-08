@@ -1,0 +1,72 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-push:
+    name: Build & push images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - { name: api, context: ., dockerfile: apps/api/Dockerfile }
+          - { name: web, context: ., dockerfile: apps/web/Dockerfile }
+          - {
+              name: generator,
+              context: services/generator,
+              dockerfile: services/generator/Dockerfile,
+            }
+          - { name: codes, context: services/codes, dockerfile: services/codes/Dockerfile }
+          - {
+              name: validator,
+              context: services/validator,
+              dockerfile: services/validator/Dockerfile,
+            }
+          - { name: geometry, context: services/geometry, dockerfile: services/geometry/Dockerfile }
+          - { name: export, context: services/export, dockerfile: services/export/Dockerfile }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/fpg-${{ matrix.name }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy-staging:
+    name: Deploy to staging
+    needs: build-push
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      # Apply manifests with the new image tag (kustomize overlay). Migrations run as a pre-deploy Job.
+      - run: echo "kubectl apply -k infra/k8s/overlays/staging # wired with cluster credentials"
+
+  deploy-prod:
+    name: Deploy to production
+    needs: deploy-staging
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    environment: production # requires manual approval (GitHub environment protection)
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "kubectl apply -k infra/k8s/overlays/prod # blue/green or canary; rollback runbook in infra/k8s/README.md"

@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "id": "generic-ibc-2021",
+  "jurisdiction": "Generic (IBC-like) 2021",
+  "version": "2021.0",
+  "source_docs": [
+    {
+      "title": "Generic International Building Code (illustrative)",
+      "url": "https://codes.iccsafe.org/",
+      "effective_date": "2021-01-01"
+    }
+  ],
+  "rules": [
+    {
+      "id": "min-area-bedroom",
+      "category": "min_area",
+      "applies_to": { "room_types": ["bedroom", "master_bedroom"], "element": "room" },
+      "predicate": {
+        "op": "cmp",
+        "metric": "room.area_mm2",
+        "comparator": ">=",
+        "value": 7000000
+      },
+      "severity": "error",
+      "citation": {
+        "doc": "Generic IBC",
+        "section": "1208.1",
+        "text": "Habitable rooms shall have a floor area of not less than 7 m²."
+      }
+    },
+    {
+      "id": "min-door-clear-width",
+      "category": "door_width",
+      "applies_to": { "element": "door" },
+      "predicate": {
+        "op": "cmp",
+        "metric": "door.clear_width_mm",
+        "comparator": ">=",
+        "value": 815
+      },
+      "severity": "error",
+      "citation": {
+        "doc": "Generic IBC",
+        "section": "1010.1.1",
+        "text": "The minimum clear width of a door opening shall be 815 mm."
+      }
+    }
+  ]
+}

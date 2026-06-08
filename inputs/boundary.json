@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "id": "22222222-2222-2222-2222-222222222222",
+  "north_angle_deg": 0,
+  "levels": [
+    {
+      "index": 0,
+      "elevation_mm": 0,
+      "floor_to_floor_mm": 3000,
+      "outline": {
+        "rings": [{ "points": [[0, 0], [14000, 0], [14000, 10000], [0, 10000]] }]
+      }
+    }
+  ],
+  "site": {
+    "parcel_polygon": {
+      "rings": [{ "points": [[-2000, -2000], [16000, -2000], [16000, 12000], [-2000, 12000]] }]
+    },
+    "setbacks": { "front_mm": 2000, "rear_mm": 2000, "left_mm": 2000, "right_mm": 2000 }
+  }
+}

@@ -1,0 +1,13 @@
+Room,Entry,Living Room,Dining,Kitchen,Master Bedroom,Bedroom 2,Bedroom 3,Bathroom,Ensuite,Hallway,Laundry,Garage
+Entry,-,connected_open,,,,,,,,connected_door,,near
+Living Room,connected_open,-,connected_open,connected_open,,,,,,,,
+Dining,,connected_open,-,adjacent,,,,,,,,
+Kitchen,,connected_open,adjacent,-,,,,,,,connected_door,connected_door
+Master Bedroom,,,,,-,,,,connected_door,connected_door,,
+Bedroom 2,,,,,,-,,near,,connected_door,,
+Bedroom 3,,,,,,,-,,,connected_door,,
+Bathroom,,,,,,near,,-,,connected_door,,
+Ensuite,,,,,connected_door,,,,-,,,
+Hallway,connected_door,,,,connected_door,connected_door,connected_door,connected_door,,-,,
+Laundry,,,,connected_door,,,,,,,-,
+Garage,near,,,connected_door,,,,,,,,-

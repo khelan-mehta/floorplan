@@ -1,0 +1,19 @@
+# KEDA autoscaling: scale the worker from zero based on the Arq Redis queue length.
+# Requires KEDA installed in the cluster (https://keda.sh). The GPU generator pool uses the
+# same pattern with a separate queue + GPU node selector/tolerations.
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: worker
+spec:
+  scaleTargetRef:
+    name: worker
+  minReplicaCount: 0
+  maxReplicaCount: 8
+  cooldownPeriod: 120
+  triggers:
+    - type: redis
+      metadata:
+        addressFromEnv: REDIS_URL
+        listName: arq:queue
+        listLength: '5'

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "project.schema.json",
+  "title": "Project",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "id", "name", "owner_id", "units"],
+  "properties": {
+    "schema_version": { "type": "integer", "const": 1 },
+    "id": { "$ref": "common.schema.json#/$defs/Uuid" },
+    "name": { "type": "string", "minLength": 1 },
+    "owner_id": { "$ref": "common.schema.json#/$defs/Uuid" },
+    "units": { "$ref": "common.schema.json#/$defs/Units" },
+    "jurisdiction_id": { "type": ["string", "null"] },
+    "boundary_id": { "anyOf": [{ "$ref": "common.schema.json#/$defs/Uuid" }, { "type": "null" }] },
+    "program_id": { "anyOf": [{ "$ref": "common.schema.json#/$defs/Uuid" }, { "type": "null" }] },
+    "current_plan_id": {
+      "anyOf": [{ "$ref": "common.schema.json#/$defs/Uuid" }, { "type": "null" }]
+    },
+    "created_at": { "type": "string", "format": "date-time" },
+    "updated_at": { "type": "string", "format": "date-time" }
+  }
+}

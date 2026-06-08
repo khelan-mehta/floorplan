@@ -1,0 +1,57 @@
+# Node
+node_modules/
+dist/
+build/
+.vite/
+*.tsbuildinfo
+.eslintcache
+
+# Generated Pydantic models (produced on demand by `pnpm codegen:py`; not committed)
+packages/schemas/gen/python/
+
+# Generated API artifacts (produced from the running FastAPI app)
+apps/api/openapi.json
+**/client.d.ts
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+*.egg-info/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Datasets / models (large; fetched, not committed)
+datasets/*
+!datasets/README.md
+models/*
+!models/README.md
+
+# Artifacts / storage
+*.glb
+*.gltf
+*.dwg
+*.dxf
+*.ifc
+storage/
+tmp/
+_demo_exports/
+
+# Local databases
+*.db
+
+# Local machine-specific Claude settings
+.claude/settings.local.json
+
+# Editor / OS
+.idea/
+.DS_Store
+Thumbs.db
+*.log

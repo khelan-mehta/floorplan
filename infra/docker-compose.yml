@@ -1,0 +1,175 @@
+# Dev stack for the Generative 3D Floor Plan Studio.
+# Usage:  corepack pnpm dev   (==  docker compose -f infra/docker-compose.yml up)
+# Reads variables from the repo-root .env (copy from .env.example first).
+
+name: fpg
+
+services:
+  # ---------- Infrastructure ----------
+  mongo:
+    image: mongo:7
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongodata:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--eval', 'db.adminCommand("ping")']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-fpg}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-fpg_dev_password}
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - '6333:6333'
+    volumes:
+      - qdrantdata:/qdrant/storage
+    healthcheck:
+      test: ['CMD-SHELL', "bash -c ':> /dev/tcp/127.0.0.1/6333' || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # ---------- Application: API gateway ----------
+  api:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    environment:
+      SERVICE_NAME: api
+      MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017}
+      MONGODB_DB: ${MONGODB_DB:-fpg}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      S3_ENDPOINT: ${S3_ENDPOINT:-http://minio:9000}
+      QDRANT_URL: ${QDRANT_URL:-http://qdrant:6333}
+      JWT_SECRET: ${JWT_SECRET:-change_me_in_prod_32_bytes_minimum_xx}
+      GENERATOR_URL: ${GENERATOR_URL:-http://generator:8000}
+      CODES_URL: ${CODES_URL:-http://codes:8000}
+      VALIDATOR_URL: ${VALIDATOR_URL:-http://validator:8000}
+      GEOMETRY_URL: ${GEOMETRY_URL:-http://geometry:8000}
+      EXPORT_URL: ${EXPORT_URL:-http://export:8000}
+    ports:
+      - '8000:8000'
+    volumes:
+      - ../apps/api/app:/app/app
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen(''http://localhost:8000/health'').status==200 else 1)"',
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  # ---------- Application: background worker (Arq) ----------
+  worker:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    command: ['arq', 'app.worker.WorkerSettings']
+    environment:
+      SERVICE_NAME: worker
+      MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017}
+      MONGODB_DB: ${MONGODB_DB:-fpg}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      GENERATOR_URL: ${GENERATOR_URL:-http://generator:8000}
+      CODES_URL: ${CODES_URL:-http://codes:8000}
+      VALIDATOR_URL: ${VALIDATOR_URL:-http://validator:8000}
+      GEOMETRY_URL: ${GEOMETRY_URL:-http://geometry:8000}
+      EXPORT_URL: ${EXPORT_URL:-http://export:8000}
+    volumes:
+      - ../apps/api/app:/app/app
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # ---------- Application: domain services (Phase 07/08/09/11/15) ----------
+  generator:
+    build: { context: ../services/generator }
+    environment: { SERVICE_NAME: generator }
+    volumes: ['../services/generator/app:/app/app']
+    ports: ['8001:8000']
+
+  codes:
+    build: { context: ../services/codes }
+    # Inject the repo-root .env directly so OPENAI_API_KEY reaches the container regardless of how
+    # compose resolves its interpolation .env. Set OPENAI_API_KEY there to use the OpenAI API for
+    # rule extraction; the deterministic offline extractor is used when it is empty.
+    env_file:
+      - path: ../.env
+        required: false
+    environment:
+      SERVICE_NAME: codes
+    volumes: ['../services/codes/app:/app/app']
+    ports: ['8002:8000']
+
+  validator:
+    build: { context: ../services/validator }
+    environment: { SERVICE_NAME: validator }
+    volumes: ['../services/validator/app:/app/app']
+    ports: ['8003:8000']
+
+  geometry:
+    build: { context: ../services/geometry }
+    environment: { SERVICE_NAME: geometry }
+    volumes: ['../services/geometry/app:/app/app']
+    ports: ['8004:8000']
+
+  export:
+    build: { context: ../services/export }
+    environment: { SERVICE_NAME: export }
+    volumes: ['../services/export/app:/app/app']
+    ports: ['8005:8000']
+
+  # ---------- Application: web ----------
+  web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+      target: dev
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
+    ports:
+      - '5173:5173'
+    depends_on:
+      - api
+
+volumes:
+  mongodata:
+  miniodata:
+  qdrantdata:

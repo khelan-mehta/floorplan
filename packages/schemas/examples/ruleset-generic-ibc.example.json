@@ -1,0 +1,223 @@
+{
+  "schema_version": 1,
+  "id": "generic-ibc-2021",
+  "jurisdiction": "Generic (IBC-like) 2021",
+  "version": "2021.0",
+  "source_docs": [
+    {
+      "title": "Generic Residential Building Code (Illustrative)",
+      "url": "https://codes.iccsafe.org/",
+      "effective_date": "2021-01-01"
+    }
+  ],
+  "rules": [
+    {
+      "id": "min-area-bedroom",
+      "category": "min_area",
+      "applies_to": { "room_types": ["bedroom", "master_bedroom"], "element": "room" },
+      "predicate": { "op": "cmp", "metric": "room.area_mm2", "comparator": ">=", "value": 7000000 },
+      "severity": "error",
+      "citation": {
+        "doc": "Generic IBC",
+        "section": "1208.1",
+        "text": "Habitable rooms shall have a floor area of not less than 7 square metres. Every dwelling unit shall have at least one habitable room (a bedroom) with a floor area of not less than 7 m²."
+      }
+    },
+    {
+      "id": "min-area-kitchen",
+      "category": "min_area",
+      "applies_to": { "room_types": ["kitchen"], "element": "room" },
+      "predicate": { "op": "cmp", "metric": "room.area_mm2", "comparator": ">=", "value": 4600000 },
+      "severity": "warning",
+      "citation": {
+        "doc": "Generic IBC",
+        "section": "1208.1",
+        "text": "Kitchens shall have a floor area of not less than 4.6 square metres."
+      }
+    },
+    {
+      "id": "min-dimension-habitable",
+      "category": "min_dimension",
+      "applies_to": {
+        "room_types": ["bedroom", "master_bedroom", "living", "dining", "office"],
+        "element": "room"
+      },
+      "predicate": {
+        "op": "cmp",
+        "metric": "room.min_dimension_mm",
+        "comparator": ">=",
+        "value": 2100
+      },
+      "severity": "error",
+      "citation": {
+        "doc": "Generic IBC",
+        "section": "1208.1",
+        "text": "No habitable room, other than a kitchen, shall be less than 2100 mm in any horizontal plan dimension."
+      }
+    },
+    {
+      "id": "min-ceiling-height",
+      "category": "ceiling_height",
+      "applies_to": { "element": "room" },
+      "predicate": {
+        "op": "cmp",
+        "metric": "room.ceiling_height_mm",
+        "comparator": ">=",
+        "value": 2300
+      },
+      "severity": "error",
+      "citation": {
+        "doc": "Generic IBC",
+        "section": "1208.2",
+        "text": "Habitable spaces shall have a ceiling height of not less than 2300 mm above the finished floor over the required area of the room."
+      }
+    },
+    {
+      "id": "natural-light",
+      "category": "daylight",
+      "applies_to": {
+        "room_types": ["bedroom", "master_bedroom", "living", "dining", "office", "kitchen"],
+        "element": "room"
+      },
+      "predicate": {
+        "op": "cmp",
+        "metric": "room.window_area_ratio",
+        "comparator": ">=",
+        "value": 0.08
+      },
+      "severity": "warning",
+      "citation": {
+        "doc": "Generic IBC",
+        "section": "1204.2",
+        "text": "Habitable rooms shall be provided with natural light by means of exterior glazed openings with an area not less than 8 percent of the floor area of the room served."
+      }
+    },
+    {
+      "id": "natural-ventilation",
+      "category": "ventilation",
+      "applies_to": {
+        "room_types": ["bedroom", "master_bedroom", "living", "dining", "kitchen"],
+        "element": "room"
+      },
+      "predicate": {
+        "op": "cmp",
+        "metric": "room.window_area_ratio",
+        "comparator": ">=",
+        "value": 0.04
+      },
+      "severity": "warning",
+      "citation": {
+        "doc": "Generic IBC",
+        "section": "1204.4",
+        "text": "Habitable rooms shall be provided with natural ventilation by means of openable exterior openings with an openable area not less than 4 percent of the floor area of the room served."
+      }
+    },
+    {
+      "id": "room-proportion",
+      "category": "proportion",
+      "applies_to": {
+        "room_types": ["bedroom", "master_bedroom", "living", "dining", "office"],
+        "element": "room"
+      },
+      "predicate": { "op": "cmp", "metric": "room.aspect_ratio", "comparator": "<=", "value": 3.0 },
+      "severity": "info",
+      "citation": {
+        "doc": "Generic IBC",
+        "section": "1207.3",
+        "text": "The ratio of the longer plan dimension to the shorter plan dimension of a habitable room should not exceed 3 to 1."
+      }
+    },
+    {
+      "id": "door-clear-width",
+      "category": "door_width",
+      "applies_to": { "element": "door" },
+      "predicate": {
+        "op": "cmp",
+        "metric": "door.clear_width_mm",
+        "comparator": ">=",
+        "value": 815
+      },
+      "severity": "error",
+      "citation": {
+        "doc": "Generic IBC",
+        "section": "1010.1.1",
+        "text": "The minimum clear width of a door opening serving as a component of a means of egress shall be not less than 815 mm."
+      }
+    },
+    {
+      "id": "egress-reachable",
+      "category": "egress",
+      "applies_to": { "element": "room" },
+      "predicate": { "op": "cmp", "metric": "egress.reachable", "comparator": "==", "value": 1 },
+      "severity": "error",
+      "citation": {
+        "doc": "Generic IBC",
+        "section": "1006.2",
+        "text": "Every habitable space shall connect, through a continuous and unobstructed path, to an exit that discharges to a public way."
+      }
+    },
+    {
+      "id": "accessible-bathroom-clearance",
+      "category": "accessibility",
+      "applies_to": { "room_types": ["bathroom", "wc"], "element": "room" },
+      "predicate": {
+        "op": "cmp",
+        "metric": "room.min_dimension_mm",
+        "comparator": ">=",
+        "value": 1500
+      },
+      "severity": "warning",
+      "citation": {
+        "doc": "Generic IBC",
+        "section": "1109.2",
+        "text": "The minimum clear interior dimension of an accessible bathroom shall be not less than 1500 mm to accommodate a wheelchair turning space."
+      }
+    },
+    {
+      "id": "corridor-min-width",
+      "category": "corridor_width",
+      "applies_to": { "element": "corridor" },
+      "predicate": {
+        "op": "cmp",
+        "metric": "corridor.min_width_mm",
+        "comparator": ">=",
+        "value": 915
+      },
+      "severity": "error",
+      "citation": {
+        "doc": "Generic IBC",
+        "section": "1020.2",
+        "text": "The minimum clear width of a corridor shall be not less than 915 mm."
+      }
+    },
+    {
+      "id": "stair-tread-run",
+      "category": "stair_geometry",
+      "applies_to": { "element": "stair" },
+      "predicate": { "op": "cmp", "metric": "stair.run_mm", "comparator": ">=", "value": 280 },
+      "severity": "error",
+      "citation": {
+        "doc": "Generic IBC",
+        "section": "1011.5.2",
+        "text": "Stair tread depth (run) shall be not less than 280 mm. Stair riser height shall be not more than 178 mm."
+      }
+    },
+    {
+      "id": "building-coverage",
+      "category": "zoning_coverage",
+      "applies_to": { "element": "building" },
+      "predicate": {
+        "op": "cmp",
+        "metric": "building.coverage_ratio",
+        "comparator": "<=",
+        "value": 0.6
+      },
+      "severity": "warning",
+      "citation": {
+        "doc": "Generic IBC",
+        "section": "Z-3.1",
+        "text": "The building footprint shall not cover more than 60 percent of the site area (maximum lot coverage ratio of 0.6)."
+      }
+    }
+  ]
+}

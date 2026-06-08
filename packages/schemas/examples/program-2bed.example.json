@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "id": "00000000-0000-0000-0000-000000000020",
+  "source": "excel",
+  "import": {
+    "artifact_id": "00000000-0000-0000-0000-0000000000e1",
+    "sheet": "Area Program",
+    "header_row": 0,
+    "unit": "m2",
+    "column_map": {
+      "label": "Room Name",
+      "type": "Room Type",
+      "count": "Qty",
+      "area_target_mm2": "Target Area (m2)",
+      "department": "Department"
+    },
+    "profile_id": "studio-default",
+    "reconcile_key": ["department", "label"]
+  },
+  "nodes": [
+    {
+      "id": "entry",
+      "type": "entry",
+      "label": "Entry",
+      "area_target_mm2": 4000000,
+      "tags": ["public"]
+    },
+    {
+      "id": "living",
+      "type": "living",
+      "label": "Living",
+      "area_target_mm2": 22000000,
+      "requires_window": true,
+      "requires_exterior_wall": true,
+      "tags": ["public"]
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "label": "Kitchen",
+      "area_target_mm2": 12000000,
+      "tags": ["service", "wet"]
+    },
+    {
+      "id": "bedroom-1",
+      "type": "master_bedroom",
+      "label": "Master Bedroom",
+      "area_min_mm2": 9000000,
+      "area_target_mm2": 14000000,
+      "requires_window": true,
+      "requires_exterior_wall": true,
+      "tags": ["private"]
+    },
+    {
+      "id": "bedroom-2",
+      "type": "bedroom",
+      "label": "Bedroom 2",
+      "area_min_mm2": 7000000,
+      "area_target_mm2": 11000000,
+      "requires_window": true,
+      "requires_exterior_wall": true,
+      "tags": ["private"]
+    },
+    {
+      "id": "bathroom",
+      "type": "bathroom",
+      "label": "Bathroom",
+      "area_target_mm2": 5000000,
+      "tags": ["service", "wet"]
+    },
+    { "id": "hallway", "type": "corridor", "label": "Hallway", "area_target_mm2": 6000000 }
+  ],
+  "edges": [
+    { "a": "entry", "b": "living", "relation": "connected_open", "weight": 0.9 },
+    { "a": "living", "b": "kitchen", "relation": "connected_open", "weight": 0.8 },
+    { "a": "entry", "b": "hallway", "relation": "connected_door", "weight": 0.7 },
+    { "a": "hallway", "b": "bedroom-1", "relation": "connected_door", "weight": 0.9 },
+    { "a": "hallway", "b": "bedroom-2", "relation": "connected_door", "weight": 0.9 },
+    { "a": "hallway", "b": "bathroom", "relation": "connected_door", "weight": 0.8 },
+    { "a": "bedroom-1", "b": "bathroom", "relation": "near", "weight": 0.5 },
+    { "a": "kitchen", "b": "bathroom", "relation": "adjacent", "weight": 0.6 }
+  ]
+}

@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "program-graph.schema.json",
+  "title": "ProgramGraph",
+  "description": "Desired rooms + adjacencies. Authored via the graph editor and/or an area-program spreadsheet (two views of one model).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "id", "source", "nodes", "edges"],
+  "properties": {
+    "schema_version": { "type": "integer", "const": 1 },
+    "id": { "$ref": "common.schema.json#/$defs/Uuid" },
+    "source": { "type": "string", "enum": ["graph", "excel", "template", "mixed"] },
+    "import": { "$ref": "program-graph.schema.json#/$defs/ProgramImport" },
+    "entry": { "$ref": "program-graph.schema.json#/$defs/EntrySpec" },
+    "nodes": {
+      "type": "array",
+      "items": { "$ref": "program-graph.schema.json#/$defs/RoomNode" }
+    },
+    "edges": {
+      "type": "array",
+      "items": { "$ref": "program-graph.schema.json#/$defs/AdjacencyEdge" }
+    }
+  },
+  "$defs": {
+    "RoomNode": {
+      "title": "RoomNode",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "type": { "$ref": "common.schema.json#/$defs/RoomType" },
+        "label": { "type": "string" },
+        "department": { "type": "string" },
+        "level": {
+          "anyOf": [
+            { "type": "integer", "minimum": 0 },
+            { "type": "string", "const": "any" }
+          ]
+        },
+        "area_min_mm2": { "type": "integer", "exclusiveMinimum": 0 },
+        "area_target_mm2": { "type": "integer", "exclusiveMinimum": 0 },
+        "aspect_ratio": { "$ref": "common.schema.json#/$defs/AspectRatio" },
+        "count": { "type": "integer", "minimum": 1 },
+        "occupancy": { "type": "integer", "minimum": 0 },
+        "requires_exterior_wall": { "type": "boolean" },
+        "requires_window": { "type": "boolean" },
+        "windows": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Desired number of windows in this room. The generator still enforces the code daylight minimum, so the placed glazing area is never below code."
+        },
+        "window_to_wall_ratio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 0.95,
+          "description": "Target glazing area as a fraction of the room's exterior wall area; auto-raised if needed to satisfy the code daylight (window-to-floor) minimum."
+        },
+        "fixed_position": {
+          "title": "FixedPosition",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["point", "lock"],
+          "properties": {
+            "point": { "$ref": "common.schema.json#/$defs/Vec2" },
+            "lock": { "type": "boolean" }
+          }
+        },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "source_row": {
+          "title": "SourceRow",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["sheet", "row"],
+          "properties": {
+            "sheet": { "type": "string" },
+            "row": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    },
+    "AdjacencyEdge": {
+      "title": "AdjacencyEdge",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["a", "b", "relation"],
+      "properties": {
+        "a": { "type": "string", "minLength": 1 },
+        "b": { "type": "string", "minLength": 1 },
+        "relation": {
+          "type": "string",
+          "enum": ["adjacent", "connected_door", "connected_open", "near", "not_adjacent"]
+        },
+        "weight": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "EntrySpec": {
+      "title": "EntrySpec",
+      "description": "Exterior entrance configuration consumed by the generator (Phase 08): how many external doors, where the main entry is, and the preferred facade side.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "exterior_doors": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8,
+          "description": "Number of doors to the outside (default 1). Most dwellings have one main entrance."
+        },
+        "entry_node_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Program node that should hold the main entrance (e.g. an entry/foyer). If omitted the generator picks a sensible public room."
+        },
+        "entry_side": {
+          "type": "string",
+          "enum": ["north", "south", "east", "west", "any"],
+          "description": "Preferred facade for the main entrance. 'any' lets the generator choose."
+        }
+      }
+    },
+    "ProgramImport": {
+      "title": "ProgramImport",
+      "description": "Spreadsheet provenance so re-imports reconcile rather than clobber. See Phase 06.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["unit", "column_map", "reconcile_key"],
+      "properties": {
+        "artifact_id": { "$ref": "common.schema.json#/$defs/Uuid" },
+        "sheet": { "type": "string" },
+        "header_row": { "type": "integer", "minimum": 0 },
+        "unit": { "type": "string", "enum": ["m2", "ft2"] },
+        "column_map": { "type": "object", "additionalProperties": { "type": "string" } },
+        "profile_id": { "type": "string" },
+        "reconcile_key": { "type": "array", "items": { "type": "string" }, "minItems": 1 }
+      }
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["vite/client", "vitest/globals", "@testing-library/jest-dom"],
+    "paths": {
+      "@fpg/ui": ["../../packages/ui/src/index.ts"],
+      "@fpg/schemas": ["../../packages/schemas/src/index.ts"],
+      "@fpg/geometry-core": ["../../packages/geometry-core/src/index.ts"]
+    }
+  },
+  "include": ["src"]
+}

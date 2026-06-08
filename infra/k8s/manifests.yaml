@@ -1,0 +1,155 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fpg-config
+data:
+  ENV: production
+  LOG_LEVEL: info
+  GENERATOR_URL: http://generator:8000
+  CODES_URL: http://codes:8000
+  VALIDATOR_URL: http://validator:8000
+  GEOMETRY_URL: http://geometry:8000
+  EXPORT_URL: http://export:8000
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: fpg-secrets
+type: Opaque
+stringData:
+  # Stub only — in prod these come from a secrets manager (SealedSecrets/SSM/Vault).
+  MONGODB_URI: mongodb://mongo:27017
+  MONGODB_DB: fpg
+  REDIS_URL: redis://redis:6379/0
+  JWT_SECRET: CHANGE_ME_32_BYTES_MINIMUM_SECRET_KEY
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  labels: { app: api }
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: api }
+  template:
+    metadata:
+      labels: { app: api }
+    spec:
+      containers:
+        - name: api
+          image: ghcr.io/OWNER/fpg-api:latest
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef: { name: fpg-config }
+            - secretRef: { name: fpg-secrets }
+          readinessProbe:
+            httpGet: { path: /health, port: 8000 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /health, port: 8000 }
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits: { cpu: '1', memory: 512Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api
+spec:
+  selector: { app: api }
+  ports:
+    - port: 8000
+      targetPort: 8000
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: api
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: api
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: { type: Utilization, averageUtilization: 70 }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+  labels: { app: worker }
+spec:
+  replicas: 0 # KEDA scales this from zero on queue depth
+  selector:
+    matchLabels: { app: worker }
+  template:
+    metadata:
+      labels: { app: worker }
+    spec:
+      containers:
+        - name: worker
+          image: ghcr.io/OWNER/fpg-api:latest
+          command: ['arq', 'app.worker.WorkerSettings']
+          envFrom:
+            - configMapRef: { name: fpg-config }
+            - secretRef: { name: fpg-secrets }
+          resources:
+            requests: { cpu: 250m, memory: 512Mi }
+            limits: { cpu: '2', memory: 2Gi }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+  labels: { app: web }
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: web }
+  template:
+    metadata:
+      labels: { app: web }
+    spec:
+      containers:
+        - name: web
+          image: ghcr.io/OWNER/fpg-web:latest
+          ports:
+            - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web
+spec:
+  selector: { app: web }
+  ports:
+    - port: 80
+      targetPort: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: fpg
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: '120'
+spec:
+  rules:
+    - host: studio.example.com
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend: { service: { name: api, port: { number: 8000 } } }
+          - path: /
+            pathType: Prefix
+            backend: { service: { name: web, port: { number: 80 } } }

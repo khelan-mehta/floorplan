@@ -1,0 +1,123 @@
+import type { Plan } from '@fpg/schemas';
+
+/** A self-contained example plan (mirrors packages/schemas/examples/plan-2bed) for the offline demo. */
+export const demoPlan: Plan = {
+  schema_version: 1,
+  id: '00000000-0000-0000-0000-000000000030',
+  project_id: '00000000-0000-0000-0000-000000000001',
+  parent_plan_id: null,
+  seed: 42,
+  source: 'generated',
+  score: 86.5,
+  levels: [
+    {
+      index: 0,
+      rooms: [
+        {
+          id: 'room-living',
+          program_node_id: 'living',
+          type: 'living',
+          polygon: {
+            rings: [
+              {
+                points: [
+                  [0, 0],
+                  [5000, 0],
+                  [5000, 8000],
+                  [0, 8000],
+                ],
+              },
+            ],
+          },
+          area_mm2: 40000000,
+          centroid: [2500, 4000],
+        },
+        {
+          id: 'room-bedroom-1',
+          program_node_id: 'bedroom-1',
+          type: 'master_bedroom',
+          polygon: {
+            rings: [
+              {
+                points: [
+                  [5000, 0],
+                  [10000, 0],
+                  [10000, 8000],
+                  [5000, 8000],
+                ],
+              },
+            ],
+          },
+          area_mm2: 40000000,
+          centroid: [7500, 4000],
+        },
+      ],
+      walls: [
+        {
+          id: 'w-s',
+          a: [0, 0],
+          b: [10000, 0],
+          thickness_mm: 200,
+          type: 'exterior',
+          height_mm: 2700,
+        },
+        {
+          id: 'w-e',
+          a: [10000, 0],
+          b: [10000, 8000],
+          thickness_mm: 200,
+          type: 'exterior',
+          height_mm: 2700,
+        },
+        {
+          id: 'w-n',
+          a: [10000, 8000],
+          b: [0, 8000],
+          thickness_mm: 200,
+          type: 'exterior',
+          height_mm: 2700,
+        },
+        {
+          id: 'w-w',
+          a: [0, 8000],
+          b: [0, 0],
+          thickness_mm: 200,
+          type: 'exterior',
+          height_mm: 2700,
+        },
+        {
+          id: 'w-mid',
+          a: [5000, 0],
+          b: [5000, 8000],
+          thickness_mm: 100,
+          type: 'interior',
+          height_mm: 2700,
+        },
+      ],
+      openings: [
+        {
+          id: 'd-mid',
+          wall_id: 'w-mid',
+          kind: 'door',
+          offset_mm: 3500,
+          width_mm: 900,
+          height_mm: 2100,
+          swing: 'left',
+          connects: ['room-living', 'room-bedroom-1'],
+        },
+        {
+          id: 'win-living',
+          wall_id: 'w-w',
+          kind: 'window',
+          offset_mm: 3000,
+          width_mm: 1500,
+          height_mm: 1200,
+          sill_mm: 900,
+          connects: ['room-living', 'exterior'],
+        },
+      ],
+      fixtures: [],
+      annotations: [],
+    },
+  ],
+};

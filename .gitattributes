@@ -1,0 +1,12 @@
+# Normalize line endings to LF in the repo
+* text=auto eol=lf
+
+# Binary assets
+*.png binary
+*.jpg binary
+*.glb binary
+*.gltf binary
+*.ifc binary
+*.dwg binary
+*.dxf binary
+*.xlsx binary

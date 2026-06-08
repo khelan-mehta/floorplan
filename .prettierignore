@@ -1,0 +1,10 @@
+**/dist/**
+**/build/**
+**/node_modules/**
+**/.vite/**
+**/.claude/**
+**/.venv/**
+packages/schemas/gen/**
+inputs/**
+pnpm-lock.yaml
+*.md

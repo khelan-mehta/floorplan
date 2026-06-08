@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "plan_id": "00000000-0000-0000-0000-000000000030",
+  "ruleset_id": "generic-ibc-2021",
+  "score": 86.5,
+  "category_scores": { "sizing": 90, "egress": 80, "daylight": 95, "circulation": 82 },
+  "results": [
+    {
+      "rule_id": "min-area-bedroom",
+      "status": "pass",
+      "severity": "error",
+      "message": "Master Bedroom is 40.0 m² (>= 7.0 m²)."
+    },
+    {
+      "rule_id": "min-door-clear-width",
+      "status": "pass",
+      "severity": "error",
+      "message": "Door d-mid clear width 900 mm (>= 815 mm).",
+      "geometry_ref": "d-mid"
+    }
+  ]
+}

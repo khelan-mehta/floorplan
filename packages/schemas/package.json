@@ -1,0 +1,30 @@
+{
+  "name": "@fpg/schemas",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Canonical JSON Schemas + generated TS/Python types (the source of truth).",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./types": "./gen/ts/types.ts",
+    "./schemas/*": "./schemas/*"
+  },
+  "scripts": {
+    "codegen": "node scripts/codegen.mjs",
+    "codegen:py": "node scripts/codegen-python.mjs",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1"
+  },
+  "devDependencies": {
+    "json-schema-to-typescript": "^15.0.3",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

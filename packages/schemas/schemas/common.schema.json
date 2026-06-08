@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "common.schema.json",
+  "title": "Common",
+  "description": "Shared definitions. All coordinates are integer millimetres (mm).",
+  "$defs": {
+    "Vec2": {
+      "title": "Vec2",
+      "description": "A 2D point in integer millimetres: [x, y].",
+      "type": "array",
+      "prefixItems": [{ "type": "integer" }, { "type": "integer" }],
+      "minItems": 2,
+      "maxItems": 2,
+      "items": false,
+      "tsType": "[number, number]"
+    },
+    "Vec3": {
+      "title": "Vec3",
+      "description": "A 3D point in integer millimetres: [x, y, z].",
+      "type": "array",
+      "prefixItems": [{ "type": "integer" }, { "type": "integer" }, { "type": "integer" }],
+      "minItems": 3,
+      "maxItems": 3,
+      "items": false,
+      "tsType": "[number, number, number]"
+    },
+    "Ring": {
+      "title": "Ring",
+      "description": "A closed ring of points (closure implicit). Outer ring CCW, holes CW.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["points"],
+      "properties": {
+        "points": {
+          "type": "array",
+          "minItems": 3,
+          "items": { "$ref": "common.schema.json#/$defs/Vec2" }
+        }
+      }
+    },
+    "Polygon": {
+      "title": "Polygon",
+      "description": "A polygon: rings[0] is the outer boundary, rings[1..] are holes.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rings"],
+      "properties": {
+        "rings": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "common.schema.json#/$defs/Ring" }
+        }
+      }
+    },
+    "AspectRatio": {
+      "title": "AspectRatio",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["min", "max"],
+      "properties": {
+        "min": { "type": "number", "exclusiveMinimum": 0 },
+        "max": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "Units": {
+      "title": "Units",
+      "description": "Display units only. Storage is always integer mm.",
+      "type": "string",
+      "enum": ["mm", "m", "ft", "in"]
+    },
+    "RoomType": {
+      "title": "RoomType",
+      "description": "Extensible room/space type. Known values live in KNOWN_ROOM_TYPES; any non-empty string is allowed so jurisdictions/firms can extend the registry.",
+      "type": "string",
+      "minLength": 1,
+      "$comment": "Known: bedroom, master_bedroom, bathroom, ensuite, kitchen, living, dining, hallway, entry, stair, elevator, closet, laundry, garage, office, balcony, storage, mechanical, corridor, lobby, retail, meeting, reception, wc, utility."
+    },
+    "Uuid": {
+      "title": "Uuid",
+      "type": "string",
+      "format": "uuid"
+    }
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "name": "floorplangenerator",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Generative 3D Floor Plan Studio — monorepo root",
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "docker compose --env-file .env -f infra/docker-compose.yml up",
+    "dev:web": "pnpm --filter @fpg/web dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "lint": "eslint . && prettier --check .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "codegen": "pnpm --filter @fpg/schemas codegen",
+    "codegen:py": "pnpm --filter @fpg/schemas codegen:py"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "eslint": "^9.17.0",
+    "eslint-config-prettier": "^9.1.0",
+    "globals": "^15.14.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.18.1"
+  }
+}

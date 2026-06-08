@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "plan.schema.json",
+  "title": "Plan",
+  "description": "A generated or edited floor plan — the system's central artifact.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "id", "project_id", "source", "levels"],
+  "properties": {
+    "schema_version": { "type": "integer", "const": 1 },
+    "id": { "$ref": "common.schema.json#/$defs/Uuid" },
+    "project_id": { "$ref": "common.schema.json#/$defs/Uuid" },
+    "parent_plan_id": {
+      "anyOf": [{ "$ref": "common.schema.json#/$defs/Uuid" }, { "type": "null" }]
+    },
+    "seed": { "type": "integer" },
+    "source": { "type": "string", "enum": ["generated", "edited", "imported"] },
+    "levels": { "type": "array", "items": { "$ref": "plan.schema.json#/$defs/PlanLevel" } },
+    "score": { "type": "number" },
+    "created_at": { "type": "string", "format": "date-time" }
+  },
+  "$defs": {
+    "PlanLevel": {
+      "title": "PlanLevel",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["index", "rooms", "walls", "openings", "fixtures"],
+      "properties": {
+        "index": { "type": "integer", "minimum": 0 },
+        "rooms": { "type": "array", "items": { "$ref": "plan.schema.json#/$defs/Room" } },
+        "walls": { "type": "array", "items": { "$ref": "plan.schema.json#/$defs/Wall" } },
+        "openings": { "type": "array", "items": { "$ref": "plan.schema.json#/$defs/Opening" } },
+        "fixtures": { "type": "array", "items": { "$ref": "plan.schema.json#/$defs/Fixture" } },
+        "annotations": {
+          "type": "array",
+          "items": { "$ref": "plan.schema.json#/$defs/Annotation" }
+        }
+      }
+    },
+    "Room": {
+      "title": "Room",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "polygon", "area_mm2", "centroid"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "program_node_id": { "type": "string" },
+        "type": { "$ref": "common.schema.json#/$defs/RoomType" },
+        "polygon": { "$ref": "common.schema.json#/$defs/Polygon" },
+        "area_mm2": { "type": "integer", "minimum": 0 },
+        "centroid": { "$ref": "common.schema.json#/$defs/Vec2" }
+      }
+    },
+    "Wall": {
+      "title": "Wall",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "a", "b", "thickness_mm", "type", "height_mm"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "a": { "$ref": "common.schema.json#/$defs/Vec2" },
+        "b": { "$ref": "common.schema.json#/$defs/Vec2" },
+        "thickness_mm": { "type": "integer", "exclusiveMinimum": 0 },
+        "type": { "type": "string", "enum": ["exterior", "interior", "partition", "shaft"] },
+        "height_mm": { "type": "integer", "exclusiveMinimum": 0 },
+        "bears_load": { "type": "boolean" }
+      }
+    },
+    "Opening": {
+      "title": "Opening",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "wall_id", "kind", "offset_mm", "width_mm", "height_mm"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "wall_id": { "type": "string", "minLength": 1 },
+        "kind": { "type": "string", "enum": ["door", "window", "opening"] },
+        "offset_mm": { "type": "integer", "minimum": 0 },
+        "width_mm": { "type": "integer", "exclusiveMinimum": 0 },
+        "height_mm": { "type": "integer", "exclusiveMinimum": 0 },
+        "sill_mm": { "type": "integer", "minimum": 0 },
+        "swing": { "type": "string", "enum": ["left", "right", "double", "slide"] },
+        "connects": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "Fixture": {
+      "title": "Fixture",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "component_id", "room_id", "transform"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "component_id": { "type": "string", "minLength": 1 },
+        "room_id": { "type": "string", "minLength": 1 },
+        "transform": {
+          "title": "Transform",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["pos", "rot_z_deg"],
+          "properties": {
+            "pos": { "$ref": "common.schema.json#/$defs/Vec3" },
+            "rot_z_deg": { "type": "number" },
+            "scale": { "type": "number", "exclusiveMinimum": 0 }
+          }
+        },
+        "params": { "type": "object" }
+      }
+    },
+    "Annotation": {
+      "title": "Annotation",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "anchor"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "kind": { "type": "string", "enum": ["dimension", "room_tag", "note"] },
+        "anchor": { "$ref": "common.schema.json#/$defs/Vec2" },
+        "text": { "type": "string" },
+        "target": { "$ref": "common.schema.json#/$defs/Vec2" }
+      }
+    }
+  }
+}

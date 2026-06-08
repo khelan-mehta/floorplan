@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copy to %AppData%\Autodesk\Revit\Addins\<version>\ alongside the built DLL. -->
+<RevitAddIns>
+  <AddIn Type="Command">
+    <Name>Import from Floor Plan Studio</Name>
+    <Assembly>FpgStudio.RevitAddin.dll</Assembly>
+    <FullClassName>FpgStudio.RevitAddin.ImportPlanCommand</FullClassName>
+    <AddInId>7f3b2c10-9d44-4a2e-bf1a-0a1b2c3d4e5f</AddInId>
+    <VendorId>FPG</VendorId>
+    <VendorDescription>Floor Plan Studio</VendorDescription>
+  </AddIn>
+</RevitAddIns>

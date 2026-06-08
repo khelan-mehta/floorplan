@@ -1,0 +1,21 @@
+from fastapi.testclient import TestClient
+
+from app.main import app
+
+client = TestClient(app)
+
+
+def test_health() -> None:
+    res = client.get("/health")
+    assert res.status_code == 200
+    body = res.json()
+    assert body["status"] == "ok"
+    assert body["service"] == "api"
+
+
+def test_version() -> None:
+    res = client.get("/version")
+    assert res.status_code == 200
+    body = res.json()
+    assert body["service"] == "api"
+    assert "version" in body
