@@ -71,13 +71,13 @@
     { "id": "hallway", "type": "corridor", "label": "Hallway", "area_target_mm2": 6000000 }
   ],
   "edges": [
-    { "a": "entry", "b": "living", "relation": "connected_open", "weight": 0.9 },
-    { "a": "living", "b": "kitchen", "relation": "connected_open", "weight": 0.8 },
-    { "a": "entry", "b": "hallway", "relation": "connected_door", "weight": 0.7 },
-    { "a": "hallway", "b": "bedroom-1", "relation": "connected_door", "weight": 0.9 },
-    { "a": "hallway", "b": "bedroom-2", "relation": "connected_door", "weight": 0.9 },
-    { "a": "hallway", "b": "bathroom", "relation": "connected_door", "weight": 0.8 },
-    { "a": "bedroom-1", "b": "bathroom", "relation": "near", "weight": 0.5 },
-    { "a": "kitchen", "b": "bathroom", "relation": "adjacent", "weight": 0.6 }
+    { "a": "entry", "b": "living", "relation": "connected_open", "weight": 90 },
+    { "a": "living", "b": "kitchen", "relation": "connected_open", "weight": 80 },
+    { "a": "entry", "b": "hallway", "relation": "connected_door", "weight": 70 },
+    { "a": "hallway", "b": "bedroom-1", "relation": "connected_door", "weight": 90 },
+    { "a": "hallway", "b": "bedroom-2", "relation": "connected_door", "weight": 90 },
+    { "a": "hallway", "b": "bathroom", "relation": "connected_door", "weight": 80 },
+    { "a": "bedroom-1", "b": "bathroom", "relation": "near", "weight": 50 },
+    { "a": "kitchen", "b": "bathroom", "relation": "adjacent", "weight": 60 }
   ]
 }

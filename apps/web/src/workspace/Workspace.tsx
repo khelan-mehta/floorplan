@@ -13,16 +13,21 @@ import {
   toast,
 } from '@fpg/ui';
 import { KNOWN_ROOM_TYPES, type Plan } from '@fpg/schemas';
-import { Box, Layers, Maximize2, Redo2, Save, Square, Undo2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import type { ValidationReport } from '../api/types';
+import { Box, Footprints, Layers, Maximize2, Redo2, Save, Square, Sun, Undo2 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
+import { useCritique } from '../hooks/queries';
 import { componentsForRoom } from '../library/catalog';
+import { furnitureFootprintMm2 } from '../library/furnish';
 import { downloadBlob } from '../program/excel-export';
 import { useEditor } from '../store/editor';
 import { PlanCanvas2D } from '../viewport/PlanCanvas2D';
 import { PlanScene3D, type CameraView } from '../viewport/PlanScene3D';
 import { getLevel, planLegend } from '../viewport/plan-render';
 import { usePlanEditor } from './planStore';
+import { buildPlanSummary } from './plan-summary';
 
 export interface WorkspaceProps {
   plan: Plan;
@@ -30,9 +35,17 @@ export interface WorkspaceProps {
   canEdit?: boolean;
   onGenerate?: () => void;
   generating?: boolean;
+  validation?: ValidationReport | null;
 }
 
-export function Workspace({ plan, title, canEdit = true, onGenerate, generating }: WorkspaceProps) {
+export function Workspace({
+  plan,
+  title,
+  canEdit = true,
+  onGenerate,
+  generating,
+  validation,
+}: WorkspaceProps) {
   const load = usePlanEditor((s) => s.load);
   const editPlan = usePlanEditor((s) => s.plan);
 
@@ -54,7 +67,7 @@ export function Workspace({ plan, title, canEdit = true, onGenerate, generating 
       <div className="min-h-0 flex-1">
         <Split>
           <SplitPane defaultSize={20} minSize={14}>
-            <LeftPanel plan={active} />
+            <LeftPanel plan={active} validation={validation} />
           </SplitPane>
           <SplitHandle />
           <SplitPane defaultSize={58} minSize={30}>
@@ -66,7 +79,7 @@ export function Workspace({ plan, title, canEdit = true, onGenerate, generating 
           </SplitPane>
         </Split>
       </div>
-      <StatusBar plan={active} />
+      <StatusBar plan={active} validation={validation} />
     </div>
   );
 }
@@ -86,8 +99,13 @@ function TopBar({
 }) {
   const viewMode = useEditor((s) => s.viewMode);
   const setViewMode = useEditor((s) => s.setViewMode);
+  const showCirculation = useEditor((s) => s.showCirculation);
+  const setShowCirculation = useEditor((s) => s.setShowCirculation);
+  const showSunlight = useEditor((s) => s.showSunlight);
+  const setShowSunlight = useEditor((s) => s.setShowSunlight);
   const { undo, redo, canUndo, canRedo, dirty, plan, markSaved } = usePlanEditor();
   const [saving, setSaving] = useState(false);
+  const qc = useQueryClient();
 
   const save = async () => {
     if (!plan) return;
@@ -96,6 +114,9 @@ function TopBar({
       await api.patchPlan(plan.id, { levels: plan.levels }, 'edited');
       markSaved();
       toast.success('Saved as new version');
+      qc.invalidateQueries({ queryKey: ['plans'] });
+      qc.invalidateQueries({ queryKey: ['plan'] });
+      qc.invalidateQueries({ queryKey: ['project'] });
     } catch {
       toast.error('Save failed (is the API running?)');
     } finally {
@@ -144,6 +165,24 @@ function TopBar({
             </TabsTrigger>
           </TabsList>
         </Tabs>
+        <Tooltip label="Highlight the entry and circulation path">
+          <Button
+            size="icon"
+            variant={showCirculation ? 'primary' : 'ghost'}
+            onClick={() => setShowCirculation(!showCirculation)}
+          >
+            <Footprints className="h-4 w-4" />
+          </Button>
+        </Tooltip>
+        <Tooltip label="Show sunlight exposure per room">
+          <Button
+            size="icon"
+            variant={showSunlight ? 'primary' : 'ghost'}
+            onClick={() => setShowSunlight(!showSunlight)}
+          >
+            <Sun className="h-4 w-4" />
+          </Button>
+        </Tooltip>
         {canEdit && (
           <Button variant="secondary" size="sm" disabled={saving} onClick={save}>
             <Save className="mr-1 h-3.5 w-3.5" /> {saving ? 'Saving…' : 'Save'}
@@ -171,11 +210,12 @@ function TopBar({
   );
 }
 
-function LeftPanel({ plan }: { plan: Plan }) {
+function LeftPanel({ plan, validation }: { plan: Plan; validation?: ValidationReport | null }) {
   const selectedLevel = useEditor((s) => s.selectedLevel);
   const setSelectedLevel = useEditor((s) => s.setSelectedLevel);
   const level = getLevel(plan, selectedLevel);
   const legend = level ? planLegend(level) : [];
+  const summary = useMemo(() => buildPlanSummary(plan, validation), [plan, validation]);
   return (
     <Panel className="m-2 flex h-[calc(100%-1rem)] flex-col gap-3 overflow-auto p-3">
       <section>
@@ -207,6 +247,10 @@ function LeftPanel({ plan }: { plan: Plan }) {
           ))}
         </ul>
       </section>
+      <section>
+        <h3 className="mb-2 text-xs uppercase text-muted">Plan summary</h3>
+        <p className="text-sm text-muted">{summary}</p>
+      </section>
     </Panel>
   );
 }
@@ -214,6 +258,8 @@ function LeftPanel({ plan }: { plan: Plan }) {
 function Viewport({ plan, canEdit }: { plan: Plan; canEdit: boolean }) {
   const viewMode = useEditor((s) => s.viewMode);
   const selectedLevel = useEditor((s) => s.selectedLevel);
+  const showCirculation = useEditor((s) => s.showCirculation);
+  const showSunlight = useEditor((s) => s.showSunlight);
   const moveRoomVertex = usePlanEditor((s) => s.moveRoomVertex);
   const moveOpening = usePlanEditor((s) => s.moveOpening);
   const [camera, setCamera] = useState<CameraView>('iso');
@@ -225,10 +271,17 @@ function Viewport({ plan, canEdit }: { plan: Plan; canEdit: boolean }) {
           editable={canEdit}
           onMoveVertex={(roomId, i, p) => moveRoomVertex(selectedLevel, roomId, i, p)}
           onMoveOpening={(id, off) => moveOpening(selectedLevel, id, off)}
+          showCirculation={showCirculation}
+          showSunlight={showSunlight}
         />
       ) : (
         <>
-          <PlanScene3D plan={plan} view={camera} />
+          <PlanScene3D
+            plan={plan}
+            view={camera}
+            showCirculation={showCirculation}
+            showSunlight={showSunlight}
+          />
           <div className="absolute right-2 top-2 flex gap-1">
             <Tooltip label="Isometric view">
               <Button size="icon" variant="secondary" onClick={() => setCamera('iso')}>
@@ -242,6 +295,16 @@ function Viewport({ plan, canEdit }: { plan: Plan; canEdit: boolean }) {
             </Tooltip>
           </div>
         </>
+      )}
+      {showSunlight && (
+        <div className="absolute bottom-2 left-2 flex items-center gap-2 rounded-md border border-line bg-panel/90 px-2 py-1 text-xs text-muted">
+          <span>Less sun</span>
+          <div
+            className="h-3 w-24 rounded"
+            style={{ background: 'linear-gradient(to right, #1e3a8a, #fbbf24)' }}
+          />
+          <span>More sun</span>
+        </div>
       )}
     </div>
   );
@@ -349,6 +412,24 @@ function Inspector({ plan, canEdit }: { plan: Plan; canEdit: boolean }) {
             </datalist>
           </label>
           <Row label="Area" value={`${(room.area_mm2 / 1_000_000).toFixed(1)} m²`} />
+          {(() => {
+            const used = furnitureFootprintMm2(
+              level?.fixtures.filter((f) => f.room_id === room.id) ?? [],
+            );
+            const remaining = Math.max(0, room.area_mm2 - used);
+            return (
+              <>
+                <Row label="Furniture footprint" value={`${(used / 1_000_000).toFixed(1)} m²`} />
+                <Row
+                  label="Remaining floor space"
+                  value={`${(remaining / 1_000_000).toFixed(1)} m² (${(
+                    (100 * remaining) /
+                    room.area_mm2
+                  ).toFixed(0)}%)`}
+                />
+              </>
+            );
+          })()}
           {canEdit && (
             <Button
               size="sm"
@@ -377,7 +458,47 @@ function Inspector({ plan, canEdit }: { plan: Plan; canEdit: boolean }) {
       {!room && !fixture && !wall && !opening && (
         <p className="text-sm text-muted">Select a room, wall, opening, or fixture.</p>
       )}
+      {canEdit && <CriticPanel planId={plan.id} />}
     </Panel>
+  );
+}
+
+/** AI critic (item 3): free-text feedback ("kitchen too small", "bedroom near bathroom") is
+ * turned into program-graph adjustments and used to generate a new plan version. */
+function CriticPanel({ planId }: { planId: string }) {
+  const [feedback, setFeedback] = useState('');
+  const critique = useCritique(planId);
+
+  const submit = () => {
+    if (!feedback.trim()) return;
+    critique.mutate(feedback, {
+      onSuccess: (res) => {
+        toast.success(res.notes || 'Plan updated');
+        setFeedback('');
+      },
+      onError: () => toast.error('Critique failed (is the API running?)'),
+    });
+  };
+
+  return (
+    <section className="mt-4 border-t border-line pt-3">
+      <h3 className="mb-2 text-xs uppercase text-muted">AI critic</h3>
+      <textarea
+        className="h-20 w-full rounded-md border border-line bg-panel-2 px-2 py-1 text-sm"
+        placeholder="e.g. the kitchen is too small, or bedroom should be near the bathroom"
+        value={feedback}
+        onChange={(e) => setFeedback(e.target.value)}
+      />
+      <Button
+        size="sm"
+        variant="secondary"
+        className="mt-2"
+        disabled={critique.isPending || !feedback.trim()}
+        onClick={submit}
+      >
+        {critique.isPending ? 'Thinking…' : 'Apply feedback'}
+      </Button>
+    </section>
   );
 }
 
@@ -390,7 +511,7 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-function StatusBar({ plan }: { plan: Plan }) {
+function StatusBar({ plan, validation }: { plan: Plan; validation?: ValidationReport | null }) {
   const total = plan.levels.reduce((acc, l) => acc + l.rooms.length, 0);
   const fixtures = plan.levels.reduce((acc, l) => acc + l.fixtures.length, 0);
   const openings = plan.levels.flatMap((l) => l.openings);
@@ -405,11 +526,58 @@ function StatusBar({ plan }: { plan: Plan }) {
       <span className="flex items-center gap-2">
         Score
         {plan.score != null ? (
-          <Badge tone={plan.score >= 80 ? 'ok' : 'warn'}>{plan.score.toFixed(1)}</Badge>
+          <Tooltip label={<ScoreExplanation plan={plan} validation={validation} />}>
+            <Badge tone={plan.score >= 80 ? 'ok' : 'warn'}>{plan.score.toFixed(1)}</Badge>
+          </Tooltip>
         ) : (
           <Badge>n/a</Badge>
         )}
       </span>
+    </div>
+  );
+}
+
+/** Explains what the score badge means: validator pass-rate if available, else the generator's
+ * own layout score (adjacency satisfaction + area fit). */
+function ScoreExplanation({
+  plan,
+  validation,
+}: {
+  plan: Plan;
+  validation?: ValidationReport | null;
+}) {
+  if (validation) {
+    const categories = Object.entries(validation.category_scores ?? {});
+    return (
+      <div className="max-w-xs space-y-1">
+        <p className="font-medium">Compliance score</p>
+        <p>Weighted pass-rate of code-compliance rules checked against the active ruleset.</p>
+        {categories.length > 0 && (
+          <ul className="space-y-0.5">
+            {categories.map(([cat, score]) => (
+              <li key={cat}>
+                {cat}: {score.toFixed(0)}%
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    );
+  }
+  const breakdown = plan.score_breakdown;
+  return (
+    <div className="max-w-xs space-y-1">
+      <p className="font-medium">Layout score</p>
+      <p>
+        60% adjacency satisfaction (rooms placed next to their requested neighbours) + 40% area fit
+        (how close each room is to its target area).
+      </p>
+      {breakdown && (
+        <p>
+          Adjacency: {breakdown.adjacency?.toFixed(0)}% · Area fit: {breakdown.area_fit?.toFixed(0)}
+          %
+        </p>
+      )}
     </div>
   );
 }

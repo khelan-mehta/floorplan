@@ -142,6 +142,22 @@ export const CATALOG: ComponentDef[] = [
     wall_mounted: false,
     affinity: ['office'],
   },
+  {
+    id: 'shelving-unit',
+    label: 'Shelving Unit',
+    category: 'storage',
+    size_mm: [900, 400, 1800],
+    wall_mounted: true,
+    affinity: ['storage', 'utility', 'garage', 'mechanical', 'laundry'],
+  },
+  {
+    id: 'bench',
+    label: 'Bench',
+    category: 'seating',
+    size_mm: [1200, 400, 450],
+    wall_mounted: true,
+    affinity: ['entry', 'lobby', 'reception', 'hallway', 'corridor'],
+  },
 ];
 
 export const CATALOG_BY_ID: Record<string, ComponentDef> = Object.fromEntries(
@@ -159,6 +175,18 @@ export const ROOM_FURNITURE: Record<string, string[]> = {
   ensuite: ['toilet', 'basin', 'shower'],
   wc: ['toilet', 'basin'],
   office: ['desk', 'office-chair', 'bookshelf'],
+  hallway: ['bench'],
+  corridor: ['bench'],
+  entry: ['bench', 'bookshelf'],
+  lobby: ['bench', 'bookshelf'],
+  reception: ['bench', 'bookshelf'],
+  closet: ['wardrobe'],
+  laundry: ['shelving-unit'],
+  utility: ['shelving-unit'],
+  garage: ['shelving-unit'],
+  mechanical: ['shelving-unit'],
+  storage: ['shelving-unit'],
+  meeting: ['dining-table', 'office-chair'],
 };
 
 export function componentsForRoom(roomType: string): ComponentDef[] {

@@ -48,6 +48,11 @@ class Settings(BaseSettings):
     geometry_url: str = "http://localhost:8004"
     export_url: str = "http://localhost:8005"
 
+    # AI critic (optional; deterministic fallback used when empty).
+    openai_api_key: str = ""
+    openai_model: str = "gpt-4o-mini"
+    openai_base_url: str = ""  # optional override (Azure/proxy/compatible endpoints)
+
     def resolved_schemas_dir(self) -> str:
         return self.schemas_dir or _default_schemas_dir()
 

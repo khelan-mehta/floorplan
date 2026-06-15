@@ -1,6 +1,7 @@
 import { Badge, Button, Spinner, toast } from '@fpg/ui';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { demoPlan } from '../demo/plan';
 import { CompliancePanel } from '../codes/CompliancePanel';
 import { useGenerate, usePlan, usePlans, useProject } from '../hooks/queries';
@@ -20,15 +21,21 @@ export function ProjectWorkspace() {
   const { data: plans } = usePlans(id);
   const generate = useGenerate(id ?? '');
   const { event } = useJob(generate.data?.id ?? null);
+  const qc = useQueryClient();
 
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const activeId = selectedPlanId ?? project?.current_plan_id ?? plans?.[0]?.id;
   const { data: plan } = usePlan(activeId);
 
   useEffect(() => {
-    if (event?.status === 'succeeded') toast.success('Plans generated');
+    if (event?.status === 'succeeded') {
+      toast.success('Plans generated');
+      qc.invalidateQueries({ queryKey: ['plans'] });
+      qc.invalidateQueries({ queryKey: ['plan'] });
+      qc.invalidateQueries({ queryKey: ['project'] });
+    }
     if (event?.status === 'failed') toast.error(event.error ?? 'Generation failed');
-  }, [event]);
+  }, [event, qc]);
 
   if (isLoading) {
     return (
@@ -66,6 +73,7 @@ export function ProjectWorkspace() {
           canEdit
           generating={generate.isPending || event?.status === 'running'}
           onGenerate={() => generate.mutate({ count: 6 })}
+          validation={plan.validation}
         />
       </div>
     </div>

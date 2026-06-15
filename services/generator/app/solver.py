@@ -19,7 +19,7 @@ from typing import Any
 
 from . import geometry as geom
 from .partition import partition_polygon
-from .scoring import POSITIVE_RELATIONS, score_plan
+from .scoring import POSITIVE_RELATIONS, edge_weight, rooms_touch, score_plan
 
 DEFAULT_HEIGHT = 2700
 MIN_SHARE_MM = 1000  # minimum shared-edge length to place an interior door
@@ -82,10 +82,14 @@ def _order_by_adjacency(specs: list[dict[str, Any]], program: dict[str, Any]) ->
             by_node[base].append(s)
 
     adj: dict[str, set[str]] = defaultdict(set)
+    weight: dict[tuple[str, str], float] = {}
     for e in program.get("edges", []):
         if e["relation"] in POSITIVE_RELATIONS:
             adj[e["a"]].add(e["b"])
             adj[e["b"]].add(e["a"])
+            w = edge_weight(e)
+            weight[(e["a"], e["b"])] = w
+            weight[(e["b"], e["a"])] = w
 
     seen_specs: set[str] = set()
     ordered: list[dict[str, Any]] = []
@@ -100,7 +104,12 @@ def _order_by_adjacency(specs: list[dict[str, Any]], program: dict[str, Any]) ->
             if s["room_id"] not in seen_specs:
                 seen_specs.add(s["room_id"])
                 ordered.append(s)
-        for nbr in sorted(adj.get(node_id, [])):
+        # Highest-affinity neighbours first, so strongly-weighted adjacencies end up
+        # next to each other in the partition order.
+        neighbours = sorted(
+            adj.get(node_id, []), key=lambda nbr: (-weight.get((node_id, nbr), 0.0), nbr)
+        )
+        for nbr in neighbours:
             if nbr not in visited_nodes:
                 queue.append(nbr)
     for s in specs:  # append any not reached via edges
@@ -108,6 +117,78 @@ def _order_by_adjacency(specs: list[dict[str, Any]], program: dict[str, Any]) ->
             seen_specs.add(s["room_id"])
             ordered.append(s)
     return ordered
+
+
+def _refine_adjacency(
+    specs: list[dict[str, Any]], polys: list[geom.Poly], program: dict[str, Any], max_passes: int = 200
+) -> list[geom.Poly]:
+    """Greedy local search: swap two rooms' polygons when it raises the weighted adjacency
+    satisfaction, without shrinking either room's min-dimension below ~1.5 m or pushing its area
+    outside 0.5-2x its target. The "adjacency agent" — strict satisfaction isn't always
+    geometrically possible, but this maximises the weighted score."""
+    edges_w = [
+        (e["a"], e["b"], edge_weight(e)) for e in program.get("edges", []) if e["relation"] in POSITIVE_RELATIONS
+    ]
+    if not edges_w or len(polys) < 2:
+        return polys
+
+    id_to_idx: dict[str, list[int]] = defaultdict(list)
+    for i, s in enumerate(specs):
+        pid = s["program_node_id"]
+        id_to_idx[pid].append(i)
+        base = pid.rsplit("-", 1)[0]
+        if base != pid:
+            id_to_idx[base].append(i)
+
+    def indices_for(node_id: str) -> list[int]:
+        return id_to_idx.get(node_id, [])
+
+    def edge_satisfied(a: str, b: str) -> bool:
+        return any(rooms_touch(polys[i], polys[j]) for i in indices_for(a) for j in indices_for(b))
+
+    def weighted_score() -> float:
+        total = sum(w for _, _, w in edges_w)
+        satisfied = sum(w for a, b, w in edges_w if edge_satisfied(a, b))
+        return satisfied / total if total else 1.0
+
+    targets = [s.get("area_target_mm2") for s in specs]
+
+    def swap_ok(i: int, j: int) -> bool:
+        for dst, src in ((i, j), (j, i)):
+            t = targets[dst]
+            if t and not (0.5 <= geom.area(polys[src]) / t <= 2.0):
+                return False
+        return True
+
+    best = weighted_score()
+    for _ in range(max_passes):
+        unsatisfied = sorted(
+            (e for e in edges_w if not edge_satisfied(e[0], e[1])), key=lambda e: -e[2]
+        )
+        if not unsatisfied:
+            break
+        improved = False
+        for a, b, _w in unsatisfied:
+            for i in indices_for(a) + indices_for(b):
+                for j in range(len(polys)):
+                    if j == i or not swap_ok(i, j):
+                        continue
+                    polys[i], polys[j] = polys[j], polys[i]
+                    score = weighted_score() if geom.min_dim(polys[i]) >= 1500 and geom.min_dim(polys[j]) >= 1500 else -1.0
+                    if score > best:
+                        best = score
+                        improved = True
+                    else:
+                        polys[i], polys[j] = polys[j], polys[i]  # revert
+                    if improved:
+                        break
+                if improved:
+                    break
+            if improved:
+                break
+        if not improved:
+            break
+    return polys
 
 
 def _matches_node(spec: dict[str, Any], node_id: str) -> bool:
@@ -248,6 +329,7 @@ def _build_plan(boundary: dict[str, Any], program: dict[str, Any], project_id: s
     snaps_x = [p[0] for p in outline]
     snaps_y = [p[1] for p in outline]
     polys = partition_polygon(weights, outline, snaps_x, snaps_y)
+    polys = _refine_adjacency(specs, polys, program)
 
     rooms: list[dict[str, Any]] = []
     room_polys: dict[str, geom.Poly] = {}
@@ -575,8 +657,9 @@ def generate_layouts(
         if signature in seen:
             continue
         seen.add(signature)
-        score, _breakdown = score_plan(plan, program)
+        score, breakdown = score_plan(plan, program)
         plan["score"] = score
+        plan["score_breakdown"] = breakdown
         candidates.append((score, plan))
         if len(candidates) >= count:
             break

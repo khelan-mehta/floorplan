@@ -195,6 +195,10 @@ export interface Plan {
   source: 'generated' | 'edited' | 'imported';
   levels: PlanLevel[];
   score?: number;
+  score_breakdown?: {
+    adjacency?: number;
+    area_fit?: number;
+  };
   created_at?: string;
 }
 export interface PlanLevel {

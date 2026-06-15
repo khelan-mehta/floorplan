@@ -96,6 +96,20 @@ export interface JobOut {
   created_at: string;
 }
 
+export interface CritiqueOut extends PlanOut {
+  notes: string;
+  adjustments: {
+    node_adjustments: Array<{
+      id: string;
+      area_delta_pct?: number;
+      requires_window?: boolean;
+      windows?: number;
+    }>;
+    edge_adjustments: Array<{ a: string; b: string; relation?: string; weight?: number }>;
+    notes: string;
+  };
+}
+
 export interface DiffOut {
   added: Record<string, unknown>;
   removed: Record<string, unknown>;

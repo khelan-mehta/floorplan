@@ -91,7 +91,7 @@
           "type": "string",
           "enum": ["adjacent", "connected_door", "connected_open", "near", "not_adjacent"]
         },
-        "weight": { "type": "number", "minimum": 0, "maximum": 1 }
+        "weight": { "type": "integer", "minimum": 0, "maximum": 100, "default": 50 }
       }
     },
     "EntrySpec": {

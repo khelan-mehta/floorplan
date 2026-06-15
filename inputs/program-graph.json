@@ -22,19 +22,19 @@
     { "id": "garage", "type": "garage", "label": "Garage", "department": "Service", "area_target_mm2": 18000000, "tags": ["service"] }
   ],
   "edges": [
-    { "a": "entry", "b": "living", "relation": "connected_open", "weight": 0.9 },
-    { "a": "entry", "b": "hall", "relation": "connected_door", "weight": 0.8 },
-    { "a": "living", "b": "dining", "relation": "connected_open", "weight": 0.8 },
-    { "a": "living", "b": "kitchen", "relation": "connected_open", "weight": 0.7 },
-    { "a": "kitchen", "b": "dining", "relation": "adjacent", "weight": 0.7 },
-    { "a": "kitchen", "b": "laundry", "relation": "connected_door", "weight": 0.7 },
-    { "a": "kitchen", "b": "garage", "relation": "connected_door", "weight": 0.6 },
-    { "a": "hall", "b": "master", "relation": "connected_door", "weight": 0.9 },
-    { "a": "hall", "b": "bed2", "relation": "connected_door", "weight": 0.9 },
-    { "a": "hall", "b": "bed3", "relation": "connected_door", "weight": 0.9 },
-    { "a": "hall", "b": "bath", "relation": "connected_door", "weight": 0.8 },
-    { "a": "master", "b": "ensuite", "relation": "connected_door", "weight": 0.9 },
-    { "a": "bed2", "b": "bath", "relation": "near", "weight": 0.5 },
-    { "a": "garage", "b": "entry", "relation": "near", "weight": 0.4 }
+    { "a": "entry", "b": "living", "relation": "connected_open", "weight": 90 },
+    { "a": "entry", "b": "hall", "relation": "connected_door", "weight": 80 },
+    { "a": "living", "b": "dining", "relation": "connected_open", "weight": 80 },
+    { "a": "living", "b": "kitchen", "relation": "connected_open", "weight": 70 },
+    { "a": "kitchen", "b": "dining", "relation": "adjacent", "weight": 90 },
+    { "a": "kitchen", "b": "laundry", "relation": "connected_door", "weight": 30 },
+    { "a": "kitchen", "b": "garage", "relation": "connected_door", "weight": 60 },
+    { "a": "hall", "b": "master", "relation": "connected_door", "weight": 90 },
+    { "a": "hall", "b": "bed2", "relation": "connected_door", "weight": 90 },
+    { "a": "hall", "b": "bed3", "relation": "connected_door", "weight": 90 },
+    { "a": "hall", "b": "bath", "relation": "connected_door", "weight": 80 },
+    { "a": "master", "b": "ensuite", "relation": "connected_door", "weight": 90 },
+    { "a": "bed2", "b": "bath", "relation": "near", "weight": 50 },
+    { "a": "garage", "b": "entry", "relation": "near", "weight": 40 }
   ]
 }

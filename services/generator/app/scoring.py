@@ -3,14 +3,24 @@ Phase-09 validator scores plans). Pure functions over Plan + ProgramGraph dicts.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Any
 
 from . import geometry as geom
 
 POSITIVE_RELATIONS = {"adjacent", "connected_door", "connected_open", "near"}
+DEFAULT_EDGE_WEIGHT = 50
 
 
-def rooms_touch(a_poly: list[list[int]], b_poly: list[list[int]], tol: int = 2) -> bool:
+def edge_weight(e: dict[str, Any]) -> float:
+    """Adjacency strength on a 0-1 scale, from the 0-100 `weight` field (default 50)."""
+    w = e.get("weight")
+    if w is None:
+        w = DEFAULT_EDGE_WEIGHT
+    return max(0.0, min(100.0, float(w))) / 100.0
+
+
+def rooms_touch(a_poly: Sequence[Sequence[float]], b_poly: Sequence[Sequence[float]], tol: int = 2) -> bool:
     """True if two room polygons share a wall segment (collinear, overlapping). Works for any
     shape, not just axis-aligned rectangles."""
     pa = geom.to_poly(a_poly)
@@ -47,13 +57,16 @@ def adjacency_satisfaction(plan: dict[str, Any], program: dict[str, Any]) -> flo
             nid = room.get("program_node_id")
             if nid:
                 poly[nid] = room["polygon"]["rings"][0]["points"]
-    satisfied = 0
+    satisfied_weight = 0.0
+    total_weight = 0.0
     for e in edges:
+        w = edge_weight(e)
+        total_weight += w
         pa = _node_polys(poly, e["a"])
         pb = _node_polys(poly, e["b"])
         if any(rooms_touch(a, b) for a in pa for b in pb):
-            satisfied += 1
-    return satisfied / len(edges)
+            satisfied_weight += w
+    return satisfied_weight / total_weight if total_weight > 0 else 1.0
 
 
 def _node_polys(poly: dict[str, list[list[int]]], node_id: str) -> list[list[list[int]]]:

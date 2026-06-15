@@ -13,6 +13,8 @@ interface EditorState {
   selectedLevel: number;
   toolMode: ToolMode;
   selection: Selection;
+  showCirculation: boolean;
+  showSunlight: boolean;
   // Undo/redo scaffold (command stacks wired in Phase 10/13).
   undoStack: string[];
   redoStack: string[];
@@ -22,6 +24,8 @@ interface EditorState {
   setToolMode: (m: ToolMode) => void;
   select: (kind: Selection['kind'], id: string | null) => void;
   clearSelection: () => void;
+  setShowCirculation: (v: boolean) => void;
+  setShowSunlight: (v: boolean) => void;
 }
 
 export const useEditor = create<EditorState>((set) => ({
@@ -29,6 +33,8 @@ export const useEditor = create<EditorState>((set) => ({
   selectedLevel: 0,
   toolMode: 'select',
   selection: { kind: null, id: null },
+  showCirculation: false,
+  showSunlight: false,
   undoStack: [],
   redoStack: [],
 
@@ -37,4 +43,6 @@ export const useEditor = create<EditorState>((set) => ({
   setToolMode: (toolMode) => set({ toolMode }),
   select: (kind, id) => set({ selection: { kind, id } }),
   clearSelection: () => set({ selection: { kind: null, id: null } }),
+  setShowCirculation: (showCirculation) => set({ showCirculation }),
+  setShowSunlight: (showSunlight) => set({ showSunlight }),
 }));

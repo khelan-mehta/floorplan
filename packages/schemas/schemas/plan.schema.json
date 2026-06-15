@@ -17,6 +17,14 @@
     "source": { "type": "string", "enum": ["generated", "edited", "imported"] },
     "levels": { "type": "array", "items": { "$ref": "plan.schema.json#/$defs/PlanLevel" } },
     "score": { "type": "number" },
+    "score_breakdown": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "adjacency": { "type": "number" },
+        "area_fit": { "type": "number" }
+      }
+    },
     "created_at": { "type": "string", "format": "date-time" }
   },
   "$defs": {

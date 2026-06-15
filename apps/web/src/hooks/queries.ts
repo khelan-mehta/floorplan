@@ -90,3 +90,15 @@ export function useGenerate(projectId: string) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['plans', projectId] }),
   });
 }
+
+export function useCritique(planId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (feedback: string) => api.critiquePlan(planId as string, feedback),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['plans'] });
+      qc.invalidateQueries({ queryKey: ['plan'] });
+      qc.invalidateQueries({ queryKey: ['project'] });
+    },
+  });
+}

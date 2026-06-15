@@ -30,6 +30,8 @@ export interface AdjacencyMatrix {
   ids: string[];
   labels: string[];
   cells: (AdjacencyEdge['relation'] | null)[][];
+  /** Adjacency strength 0-100 (default 50 when an edge exists but has no explicit weight). */
+  weights: (number | null)[][];
 }
 
 export function adjacencyMatrix(nodes: RoomNode[], edges: AdjacencyEdge[]): AdjacencyMatrix {
@@ -37,14 +39,18 @@ export function adjacencyMatrix(nodes: RoomNode[], edges: AdjacencyEdge[]): Adja
   const labels = nodes.map((n) => n.label ?? n.type);
   const idx = new Map(ids.map((id, i) => [id, i]));
   const cells: (AdjacencyEdge['relation'] | null)[][] = ids.map(() => ids.map(() => null));
+  const weights: (number | null)[][] = ids.map(() => ids.map(() => null));
   for (const e of edges) {
     const a = idx.get(e.a);
     const b = idx.get(e.b);
     if (a == null || b == null) continue;
     cells[a]![b] = e.relation;
     cells[b]![a] = e.relation;
+    const w = e.weight ?? 50;
+    weights[a]![b] = w;
+    weights[b]![a] = w;
   }
-  return { ids, labels, cells };
+  return { ids, labels, cells, weights };
 }
 
 export interface Contradiction {
@@ -107,7 +113,7 @@ const edge = (
   a: string,
   b: string,
   relation: AdjacencyEdge['relation'],
-  weight = 0.7,
+  weight = 70,
 ): AdjacencyEdge => ({
   a,
   b,
@@ -131,12 +137,12 @@ export const TEMPLATES: Record<string, ProgramState> = {
       node('hallway', 'corridor', 'Hallway', 6),
     ],
     edges: [
-      edge('entry', 'living', 'connected_open', 0.9),
-      edge('living', 'kitchen', 'connected_open', 0.8),
+      edge('entry', 'living', 'connected_open', 90),
+      edge('living', 'kitchen', 'connected_open', 80),
       edge('entry', 'hallway', 'connected_door'),
-      edge('hallway', 'bedroom-1', 'connected_door', 0.9),
-      edge('hallway', 'bedroom-2', 'connected_door', 0.9),
-      edge('hallway', 'bathroom', 'connected_door', 0.8),
+      edge('hallway', 'bedroom-1', 'connected_door', 90),
+      edge('hallway', 'bedroom-2', 'connected_door', 90),
+      edge('hallway', 'bathroom', 'connected_door', 80),
     ],
   },
   'small office': {
@@ -149,10 +155,10 @@ export const TEMPLATES: Record<string, ProgramState> = {
       node('wc', 'wc', 'WC', 6, { tags: ['wet'] }),
     ],
     edges: [
-      edge('reception', 'open-office', 'connected_open', 0.9),
-      edge('open-office', 'meeting', 'adjacent', 0.7),
-      edge('open-office', 'kitchen', 'adjacent', 0.6),
-      edge('reception', 'wc', 'connected_door', 0.6),
+      edge('reception', 'open-office', 'connected_open', 90),
+      edge('open-office', 'meeting', 'adjacent', 70),
+      edge('open-office', 'kitchen', 'adjacent', 60),
+      edge('reception', 'wc', 'connected_door', 60),
     ],
   },
 };

@@ -18,6 +18,31 @@ function bbox(points: number[][]): { minX: number; minY: number; maxX: number; m
   };
 }
 
+/** Standard ray-casting point-in-polygon test for a closed ring of `[x, y]` points. */
+export function pointInPolygon(pt: [number, number], ring: number[][]): boolean {
+  const [x, y] = pt;
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i]!;
+    const [xj, yj] = ring[j]!;
+    if (yi === undefined || yj === undefined || xi === undefined || xj === undefined) continue;
+    const intersects = yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
+    if (intersects) inside = !inside;
+  }
+  return inside;
+}
+
+/** Total floor area (mm²) covered by the given fixtures' footprints (rotation doesn't change a
+ * rectangle's area, so `rot_z_deg` can be ignored). */
+export function furnitureFootprintMm2(fixtures: Fixture[]): number {
+  return fixtures.reduce((sum, f) => {
+    const def = CATALOG_BY_ID[f.component_id];
+    if (!def) return sum;
+    const [w, d] = def.size_mm;
+    return sum + w * d;
+  }, 0);
+}
+
 /** Produce fixtures for a room (replaces any existing auto fixtures for that room). */
 export function autoFurnish(room: Room): Fixture[] {
   const ids = ROOM_FURNITURE[room.type] ?? [];
@@ -43,6 +68,10 @@ export function autoFurnish(room: Room): Fixture[] {
     if (rowY + d > b.maxY - MARGIN) return; // out of vertical space
     const cx = cursorX + w / 2;
     const cy = rowY + d / 2;
+    const outer = room.polygon.rings[0]!.points;
+    const holes = room.polygon.rings.slice(1);
+    if (!pointInPolygon([cx, cy], outer)) return; // outside the room outline (e.g. L-shaped room)
+    if (holes.some((hole) => pointInPolygon([cx, cy], hole.points))) return; // inside a hole
     fixtures.push({
       id: `fx-${room.id}-${i}`,
       component_id: componentId,

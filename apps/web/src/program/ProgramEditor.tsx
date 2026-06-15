@@ -360,6 +360,7 @@ function ProgramTable() {
 function MatrixView() {
   const nodes = useProgram((s) => s.nodes);
   const edges = useProgram((s) => s.edges);
+  const updateEdge = useProgram((s) => s.updateEdge);
   const m = useMemo(() => adjacencyMatrix(nodes, edges), [nodes, edges]);
   const glyph: Record<string, string> = {
     adjacent: '▣',
@@ -370,6 +371,10 @@ function MatrixView() {
   };
   return (
     <div className="overflow-auto p-3">
+      <p className="mb-2 text-xs text-muted">
+        Adjacency strength (0-100): how strongly two rooms should be placed near each other — e.g.
+        dining ↔ kitchen = 90, kitchen ↔ laundry = 30.
+      </p>
       <table className="text-xs">
         <thead>
           <tr>
@@ -385,11 +390,38 @@ function MatrixView() {
           {m.ids.map((id, r) => (
             <tr key={id}>
               <td className="whitespace-nowrap p-1 text-muted">{m.labels[r]}</td>
-              {m.ids.map((cid, c) => (
-                <td key={cid} className="p-1 text-center">
-                  {r === c ? '—' : m.cells[r]?.[c] ? glyph[m.cells[r]![c]!] : ''}
-                </td>
-              ))}
+              {m.ids.map((cid, c) => {
+                if (r === c)
+                  return (
+                    <td key={cid} className="p-1 text-center">
+                      —
+                    </td>
+                  );
+                const relation = m.cells[r]?.[c];
+                if (!relation) return <td key={cid} className="p-1 text-center" />;
+                const weight = m.weights[r]?.[c] ?? 50;
+                return (
+                  <td key={cid} className="p-1 text-center">
+                    <div className="flex flex-col items-center gap-0.5">
+                      <span title={relation}>{glyph[relation]}</span>
+                      <input
+                        type="number"
+                        min={0}
+                        max={100}
+                        step={5}
+                        value={weight}
+                        title={`Adjacency strength ${id} ↔ ${cid} (0-100)`}
+                        className="h-6 w-12 rounded border border-line bg-panel-2 px-1 text-center text-xs"
+                        onChange={(e) => {
+                          const v = Math.max(0, Math.min(100, Number(e.target.value)));
+                          updateEdge(id, cid, { weight: v });
+                          updateEdge(cid, id, { weight: v });
+                        }}
+                      />
+                    </div>
+                  </td>
+                );
+              })}
             </tr>
           ))}
         </tbody>

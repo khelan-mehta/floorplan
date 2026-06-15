@@ -300,6 +300,18 @@ export const schemas: Record<string, Record<string, unknown>> = {
       "score": {
         "type": "number"
       },
+      "score_breakdown": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "adjacency": {
+            "type": "number"
+          },
+          "area_fit": {
+            "type": "number"
+          }
+        }
+      },
       "created_at": {
         "type": "string",
         "format": "date-time"
@@ -774,9 +786,10 @@ export const schemas: Record<string, Record<string, unknown>> = {
             ]
           },
           "weight": {
-            "type": "number",
+            "type": "integer",
             "minimum": 0,
-            "maximum": 1
+            "maximum": 100,
+            "default": 50
           }
         }
       },

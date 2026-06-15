@@ -1,6 +1,7 @@
 import type { Boundary, Plan, ProgramGraph } from '@fpg/schemas';
 import type {
   CodeQueryResponse,
+  CritiqueOut,
   DiffOut,
   JobOut,
   PlanOut,
@@ -96,6 +97,8 @@ export const api = {
   duplicatePlan: (planId: string) => request<PlanOut>('POST', `/plans/${planId}/duplicate`),
   planVersions: (planId: string) => request<PlanOut[]>('GET', `/plans/${planId}/versions`),
   diffPlans: (a: string, b: string) => request<DiffOut>('GET', `/plans/${a}/diff/${b}`),
+  critiquePlan: (planId: string, feedback: string) =>
+    request<CritiqueOut>('POST', `/plans/${planId}/critique`, { feedback }),
 
   // jobs
   generate: (id: string, b: { count?: number; seed?: number }) =>

@@ -95,6 +95,15 @@ class DiffOut(BaseModel):
     changed: dict[str, Any]
 
 
+class CritiqueRequest(BaseModel):
+    feedback: str = Field(min_length=1)
+
+
+class CritiqueOut(PlanOut):
+    notes: str
+    adjustments: dict[str, Any]
+
+
 # --- jobs ---
 class GenerateRequest(BaseModel):
     count: int = Field(default=4, ge=1, le=24)

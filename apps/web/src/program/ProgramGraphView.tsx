@@ -117,7 +117,7 @@ export function ProgramGraphView() {
   const onConnect = useCallback(
     (c: Connection) => {
       if (c.source && c.target)
-        addEdge({ a: c.source, b: c.target, relation: 'adjacent', weight: 0.7 });
+        addEdge({ a: c.source, b: c.target, relation: 'adjacent', weight: 70 });
     },
     [addEdge],
   );

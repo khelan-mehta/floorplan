@@ -38,6 +38,11 @@ export function roomColor(type: string): string {
   return FALLBACK_COLORS[hash % FALLBACK_COLORS.length] as string;
 }
 
+/** "master_bedroom" -> "master bedroom", for display. */
+export function formatRoomType(type: string): string {
+  return type.replace(/_/g, ' ');
+}
+
 export interface LegendEntry {
   type: string;
   color: string;

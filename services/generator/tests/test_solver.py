@@ -7,7 +7,7 @@ from jsonschema import Draft202012Validator
 from referencing import Registry, Resource
 
 from app.scoring import adjacency_satisfaction, score_plan
-from app.solver import generate_layouts
+from app.solver import _refine_adjacency, generate_layouts
 
 
 def _exterior_doors(plan: dict) -> list[dict]:
@@ -107,6 +107,45 @@ def test_adjacency_reasonable(boundary, program) -> None:
     plans = generate_layouts(boundary, program, count=8, seed=11)
     best = max(adjacency_satisfaction(p, program) for p in plans)
     assert best >= 0.6  # squarify clusters BFS-ordered neighbours
+
+
+def _plan_for(specs: list[dict], polys: list[list[tuple[float, float]]]) -> dict:
+    return {
+        "levels": [
+            {
+                "rooms": [
+                    {
+                        "program_node_id": s["program_node_id"],
+                        "polygon": {"rings": [{"points": [[round(x), round(y)] for x, y in p]}]},
+                        "area_mm2": 1,
+                    }
+                    for s, p in zip(specs, polys, strict=True)
+                ]
+            }
+        ]
+    }
+
+
+def _square(i: float, size: float = 2000.0) -> list[tuple[float, float]]:
+    return [(i * size, 0.0), ((i + 1) * size, 0.0), ((i + 1) * size, size), (i * size, size)]
+
+
+def test_refine_adjacency_satisfies_high_weight_edge() -> None:
+    """A linear arrangement A-B-C-D doesn't put A next to D; a weight-100 edge between
+    them should get satisfied (or at least improved) by the refinement pass."""
+    specs = [
+        {"room_id": f"room-{n}", "program_node_id": n, "area_target_mm2": None}
+        for n in ("a", "b", "c", "d")
+    ]
+    polys = [_square(i) for i in range(4)]
+    program = {"edges": [{"a": "a", "b": "d", "relation": "adjacent", "weight": 100}]}
+
+    before = adjacency_satisfaction(_plan_for(specs, polys), program)
+    refined = _refine_adjacency(specs, [list(p) for p in polys], program)
+    after = adjacency_satisfaction(_plan_for(specs, refined), program)
+
+    assert before == 0.0
+    assert after == 1.0
 
 
 def test_scoring_runs(boundary, program) -> None:

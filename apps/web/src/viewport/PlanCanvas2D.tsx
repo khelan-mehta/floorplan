@@ -4,17 +4,28 @@ import { Circle, Group, Layer, Line, Rect, Stage, Text } from 'react-konva';
 import type { Plan } from '@fpg/schemas';
 import { CATALOG_BY_ID } from '../library/catalog';
 import { useEditor } from '../store/editor';
+import { circulationEdges, corridorRoomIds, findEntryRoom } from './circulation';
 import { getLevel, levelBBox, ringToFlatPoints, roomColor, type Point } from './plan-render';
+import { exposureColor, roomSunExposure } from './sunlight';
 
 interface Props {
   plan: Plan;
   editable?: boolean;
   onMoveVertex?: (roomId: string, ptIndex: number, world: Point) => void;
   onMoveOpening?: (openingId: string, offsetMm: number) => void;
+  showCirculation?: boolean;
+  showSunlight?: boolean;
 }
 
 /** 2D plan renderer with pan/zoom. Y is flipped so north is up. Editable = draggable room vertices. */
-export function PlanCanvas2D({ plan, editable = false, onMoveVertex, onMoveOpening }: Props) {
+export function PlanCanvas2D({
+  plan,
+  editable = false,
+  onMoveVertex,
+  onMoveOpening,
+  showCirculation = false,
+  showSunlight = false,
+}: Props) {
   const selectedLevel = useEditor((s) => s.selectedLevel);
   const select = useEditor((s) => s.select);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -51,6 +62,15 @@ export function PlanCanvas2D({ plan, editable = false, onMoveVertex, onMoveOpeni
     });
     // Fit only on level/size change (not on every geometry edit), so editing doesn't reset the view.
   }, [level?.index, size.w, size.h]);
+
+  const entryRoom = useMemo(() => (level ? findEntryRoom(level) : undefined), [level]);
+  const corridorIds = useMemo(() => (level ? corridorRoomIds(level) : new Set<string>()), [level]);
+  const circEdges = useMemo(() => (level ? circulationEdges(level) : []), [level]);
+  const sunScores = useMemo(() => {
+    const m = new Map<string, number>();
+    if (level) for (const room of level.rooms) m.set(room.id, roomSunExposure(level, room).score);
+    return m;
+  }, [level]);
 
   if (!level || !bbox) return null;
 
@@ -92,6 +112,76 @@ export function PlanCanvas2D({ plan, editable = false, onMoveVertex, onMoveOpeni
               </Group>
             );
           })}
+          {/* sunlight overlay */}
+          {showSunlight &&
+            level.rooms.map((room) => {
+              const outer = room.polygon.rings[0]?.points ?? [];
+              const flat = ringToFlatPoints(outer.map(toView));
+              const score = sunScores.get(room.id) ?? 0;
+              return (
+                <Line
+                  key={`sun-${room.id}`}
+                  points={flat}
+                  closed
+                  fill={exposureColor(score)}
+                  opacity={0.45}
+                  listening={false}
+                />
+              );
+            })}
+          {/* circulation overlay: entry + corridor highlights, path between connected rooms */}
+          {showCirculation && (
+            <>
+              {level.rooms
+                .filter((r) => r.id === entryRoom?.id || corridorIds.has(r.id))
+                .map((room) => {
+                  const outer = room.polygon.rings[0]?.points ?? [];
+                  const flat = ringToFlatPoints(outer.map(toView));
+                  const color = room.id === entryRoom?.id ? '#22c55e' : '#38bdf8';
+                  return (
+                    <Line
+                      key={`circ-${room.id}`}
+                      points={flat}
+                      closed
+                      fill={color}
+                      opacity={0.25}
+                      listening={false}
+                    />
+                  );
+                })}
+              {circEdges.map((edge, i) => {
+                const [ax, ay] = toView(edge.a);
+                const [bx, by] = toView(edge.b);
+                return (
+                  <Line
+                    key={`circ-edge-${i}`}
+                    points={[ax, ay, bx, by]}
+                    stroke="#22c55e"
+                    strokeWidth={30}
+                    dash={[40, 30]}
+                    listening={false}
+                  />
+                );
+              })}
+              {entryRoom &&
+                (() => {
+                  const [ex, ey] = toView(entryRoom.centroid as Point);
+                  return (
+                    <Group listening={false}>
+                      <Circle x={ex} y={ey} radius={180} fill="#22c55e" opacity={0.9} />
+                      <Text
+                        x={ex - 300}
+                        y={ey - 600}
+                        text="Entry"
+                        fontSize={350}
+                        fill="#22c55e"
+                        fontStyle="bold"
+                      />
+                    </Group>
+                  );
+                })()}
+            </>
+          )}
           {/* walls */}
           {level.walls.map((w) => {
             const [ax, ay] = toView(w.a as Point);
@@ -111,15 +201,17 @@ export function PlanCanvas2D({ plan, editable = false, onMoveVertex, onMoveOpeni
           {level.openings.map((o) => {
             const wall = level.walls.find((w) => w.id === o.wall_id);
             if (!wall) return null;
-            const [ax, ay] = wall.a as Point;
-            const [bx, by] = wall.b as Point;
+            // Work entirely in view space (matches the coordinates Konva reports for the
+            // dragged node), so no world/view round-trip is needed in onDragMove.
+            const [ax, ay] = toView(wall.a as Point);
+            const [bx, by] = toView(wall.b as Point);
             const len = Math.hypot(bx - ax, by - ay) || 1;
             const ux = (bx - ax) / len;
             const uy = (by - ay) / len;
             // centre of the opening = offset + half width along the wall
             const c = Math.min(o.offset_mm + o.width_mm / 2, len);
-            const wp: Point = [ax + ux * c, ay + uy * c];
-            const [vx, vy] = toView(wp);
+            const vx = ax + ux * c;
+            const vy = ay + uy * c;
             return (
               <Circle
                 key={o.id}
@@ -132,9 +224,7 @@ export function PlanCanvas2D({ plan, editable = false, onMoveVertex, onMoveOpeni
                 draggable={editable && !!onMoveOpening}
                 onClick={() => select('opening', o.id)}
                 onDragMove={(e) => {
-                  const wx = e.target.x();
-                  const wy = bbox.maxY - e.target.y();
-                  const proj = (wx - ax) * ux + (wy - ay) * uy; // centre along wall
+                  const proj = (e.target.x() - ax) * ux + (e.target.y() - ay) * uy; // centre along wall
                   onMoveOpening?.(o.id, Math.round(proj - o.width_mm / 2));
                 }}
               />
